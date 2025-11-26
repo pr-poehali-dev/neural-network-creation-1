@@ -1,12 +1,22 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 
+interface Message {
+  role: 'user' | 'assistant';
+  text: string;
+  isCreating?: boolean;
+  projectPreview?: {
+    title: string;
+    description: string;
+    features: string[];
+  };
+}
+
 const Index = () => {
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; text: string }>>([
+  const [messages, setMessages] = useState<Message[]>([
     { 
       role: 'assistant', 
       text: 'Привет! Я — AI-ассистент для создания сайтов. Просто опиши свою идею, и я создам для тебя сайт за пару минут. Что будем создавать?' 
@@ -14,6 +24,15 @@ const Index = () => {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const capabilities = [
     {
@@ -134,39 +153,162 @@ const Index = () => {
     { category: 'Deploy', items: ['Cloud Hosting', 'SSL Certificates', 'Custom Domains'] }
   ];
 
+  const simulateProjectCreation = (userMessage: string) => {
+    const msg = userMessage.toLowerCase();
+    
+    if (msg.includes('интернет-магазин') || msg.includes('магазин') || (msg.includes('сайт') && msg.includes('товар'))) {
+      return {
+        title: 'Интернет-магазин',
+        description: 'Создаю полноценный интернет-магазин с каталогом, корзиной и оформлением заказа',
+        features: [
+          '✓ Главная страница с популярными товарами',
+          '✓ Каталог с фильтрами и поиском',
+          '✓ Карточки товаров с описанием',
+          '✓ Корзина с расчётом стоимости',
+          '✓ Форма оформления заказа',
+          '✓ Адаптивный дизайн для мобильных'
+        ]
+      };
+    } else if (msg.includes('лендинг') || msg.includes('посадочн')) {
+      return {
+        title: 'Продающий лендинг',
+        description: 'Создаю лендинг с акцентом на конверсию и продажи',
+        features: [
+          '✓ Hero-секция с ярким заголовком',
+          '✓ Блок с преимуществами продукта',
+          '✓ Отзывы клиентов',
+          '✓ Призыв к действию (CTA)',
+          '✓ Форма захвата лидов',
+          '✓ Адаптивная вёрстка'
+        ]
+      };
+    } else if (msg.includes('портфолио') || msg.includes('резюме')) {
+      return {
+        title: 'Портфолио',
+        description: 'Создаю стильное портфолио для демонстрации работ',
+        features: [
+          '✓ Главная с информацией о тебе',
+          '✓ Галерея проектов с фильтрами',
+          '✓ Раздел навыков и опыта',
+          '✓ Контактная форма',
+          '✓ Ссылки на соцсети',
+          '✓ Современный минималистичный дизайн'
+        ]
+      };
+    } else if (msg.includes('блог') || msg.includes('статьи')) {
+      return {
+        title: 'Блог',
+        description: 'Создаю блог с системой статей и категорий',
+        features: [
+          '✓ Главная со списком статей',
+          '✓ Страницы отдельных статей',
+          '✓ Категории и теги',
+          '✓ Поиск по статьям',
+          '✓ Авторы статей',
+          '✓ Адаптивная типографика'
+        ]
+      };
+    } else if (msg.includes('корпоративн') || msg.includes('компани')) {
+      return {
+        title: 'Корпоративный сайт',
+        description: 'Создаю представительский сайт компании',
+        features: [
+          '✓ Главная с информацией о компании',
+          '✓ Услуги/Продукты',
+          '✓ О нас и команда',
+          '✓ Кейсы и отзывы',
+          '✓ Контакты с картой',
+          '✓ Профессиональный дизайн'
+        ]
+      };
+    } else if (msg.includes('сайт') || msg.includes('создай') || msg.includes('сделай')) {
+      return {
+        title: 'Веб-сайт',
+        description: 'Создаю современный адаптивный веб-сайт',
+        features: [
+          '✓ Главная страница',
+          '✓ Навигационное меню',
+          '✓ Несколько разделов',
+          '✓ Контактная форма',
+          '✓ Footer с информацией',
+          '✓ Адаптивный дизайн'
+        ]
+      };
+    }
+    
+    return null;
+  };
+
   const handleSendMessage = () => {
     if (!input.trim()) return;
 
     const userMessage = input;
-    setMessages([...messages, { role: 'user', text: userMessage }]);
+    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
     setInput('');
     setIsTyping(true);
 
+    const projectPreview = simulateProjectCreation(userMessage);
+    
     setTimeout(() => {
-      let response = '';
       const msg = userMessage.toLowerCase();
+      let response = '';
       
-      if (msg.includes('сайт') || msg.includes('создай') || msg.includes('лендинг')) {
-        response = 'Отлично! Создам для тебя сайт. Опиши подробнее: какие разделы нужны, какой стиль (минимализм, яркий, корпоративный), какая цель сайта?';
+      if (projectPreview) {
+        response = `Отлично! Начинаю создавать ${projectPreview.title.toLowerCase()}. Сейчас настрою структуру проекта...`;
+        
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          text: response,
+          isCreating: true,
+          projectPreview 
+        }]);
+        setIsTyping(false);
+
+        setTimeout(() => {
+          setMessages(prev => 
+            prev.map((msg, idx) => 
+              idx === prev.length - 1 ? { ...msg, isCreating: false } : msg
+            )
+          );
+          
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              text: `✨ Готово! Я создал ${projectPreview.title.toLowerCase()} со всеми нужными компонентами. Проект готов к использованию!\n\nЧто хочешь улучшить или добавить?`
+            }]);
+          }, 500);
+        }, 4000);
+        
       } else if (msg.includes('база') || msg.includes('таблиц') || msg.includes('sql')) {
         response = 'Создам структуру базы данных! Какие таблицы нужны? Например: "таблица users с полями email, password, created_at"';
+        setMessages(prev => [...prev, { role: 'assistant', text: response }]);
+        setIsTyping(false);
       } else if (msg.includes('backend') || msg.includes('api') || msg.includes('функц')) {
         response = 'Напишу backend функцию! На каком языке (Python для данных/AI или TypeScript для auth/real-time)? Что она должна делать?';
+        setMessages(prev => [...prev, { role: 'assistant', text: response }]);
+        setIsTyping(false);
       } else if (msg.includes('ошибк') || msg.includes('не работает') || msg.includes('баг')) {
         response = 'Сейчас проверю логи и найду проблему. Опиши, что именно не работает или в каком компоненте ошибка?';
+        setMessages(prev => [...prev, { role: 'assistant', text: response }]);
+        setIsTyping(false);
       } else if (msg.includes('дизайн') || msg.includes('цвет') || msg.includes('стил')) {
         response = 'Займусь дизайном! Какие цвета предпочитаешь? Нужны анимации? Какое настроение должен передавать дизайн?';
+        setMessages(prev => [...prev, { role: 'assistant', text: response }]);
+        setIsTyping(false);
       } else if (msg.includes('github') || msg.includes('гит') || msg.includes('репозитори')) {
         response = 'Подключу GitHub! В настройках проекта выбери "Подключить GitHub", авторизуйся, и код автоматически синхронизируется.';
+        setMessages(prev => [...prev, { role: 'assistant', text: response }]);
+        setIsTyping(false);
       } else if (msg.includes('опубликовать') || msg.includes('домен') || msg.includes('хостинг')) {
         response = 'Опубликую сайт в интернет! Нужен свой домен или подойдёт автоматический поддомен?';
+        setMessages(prev => [...prev, { role: 'assistant', text: response }]);
+        setIsTyping(false);
       } else {
         response = 'Интересная задача! Расскажи подробнее, что именно нужно сделать? Могу создать UI, настроить backend, работать с базой данных или исправить ошибки.';
+        setMessages(prev => [...prev, { role: 'assistant', text: response }]);
+        setIsTyping(false);
       }
-      
-      setMessages(prev => [...prev, { role: 'assistant', text: response }]);
-      setIsTyping(false);
-    }, 1200);
+    }, 1000);
   };
 
   return (
@@ -184,7 +326,7 @@ const Index = () => {
           <div className="hidden md:flex gap-6">
             <a href="#capabilities" className="text-foreground/80 hover:text-foreground transition-colors">Возможности</a>
             <a href="#faq" className="text-foreground/80 hover:text-foreground transition-colors">FAQ</a>
-            <a href="#docs" className="text-foreground/80 hover:text-foreground transition-colors">Документация</a>
+            <a href="#docs" className="text-foreground/80 hover:text-foreground transition-colors">Технологии</a>
           </div>
           <Button className="rounded-full">Начать создавать</Button>
         </div>
@@ -211,7 +353,9 @@ const Index = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-scale-in">
-            <Button size="lg" className="rounded-full text-lg px-8 py-6">
+            <Button size="lg" className="rounded-full text-lg px-8 py-6" onClick={() => {
+              document.getElementById('chat-input')?.focus();
+            }}>
               <Icon name="Rocket" size={20} className="mr-2" />
               Создать проект
             </Button>
@@ -233,7 +377,7 @@ const Index = () => {
                 <span className="text-sm text-foreground/60 ml-2">Юра — AI Разработчик</span>
               </div>
               <CardContent className="p-0 bg-card">
-                <div className="h-[450px] flex flex-col">
+                <div className="h-[500px] flex flex-col">
                   <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     {messages.map((msg, idx) => (
                       <div key={idx} className={`flex gap-3 animate-fade-in ${msg.role === 'user' ? 'justify-end' : ''}`}>
@@ -242,12 +386,41 @@ const Index = () => {
                             <Icon name="Sparkles" size={16} className="text-white" />
                           </div>
                         )}
-                        <div className={`max-w-[80%] p-4 rounded-2xl ${
-                          msg.role === 'user' 
-                            ? 'bg-primary text-primary-foreground ml-auto' 
-                            : 'bg-muted'
-                        }`}>
-                          {msg.text}
+                        <div className={`max-w-[85%] ${msg.role === 'user' ? 'ml-auto' : ''}`}>
+                          <div className={`p-4 rounded-2xl ${
+                            msg.role === 'user' 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'bg-muted'
+                          }`}>
+                            {msg.text}
+                          </div>
+                          
+                          {msg.projectPreview && (
+                            <Card className="mt-3 border-2 border-primary/30 overflow-hidden">
+                              <div className="bg-gradient-to-r from-primary/10 to-secondary/10 px-4 py-2 border-b flex items-center gap-2">
+                                {msg.isCreating ? (
+                                  <>
+                                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                    <span className="text-sm font-medium">Создаю проект...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Icon name="CheckCircle2" size={16} className="text-green-500" />
+                                    <span className="text-sm font-medium text-green-600">Проект создан</span>
+                                  </>
+                                )}
+                              </div>
+                              <CardContent className="p-4">
+                                <h4 className="font-semibold text-lg mb-1">{msg.projectPreview.title}</h4>
+                                <p className="text-sm text-foreground/70 mb-3">{msg.projectPreview.description}</p>
+                                <div className="space-y-1">
+                                  {msg.projectPreview.features.map((feature, i) => (
+                                    <p key={i} className="text-sm text-foreground/80">{feature}</p>
+                                  ))}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -265,10 +438,12 @@ const Index = () => {
                         </div>
                       </div>
                     )}
+                    <div ref={messagesEndRef} />
                   </div>
                   <div className="p-4 border-t">
                     <div className="flex gap-2">
                       <input
+                        id="chat-input"
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
@@ -413,7 +588,10 @@ const Index = () => {
                 <span className="px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium">Cloud Functions</span>
                 <span className="px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium">Git</span>
               </div>
-              <Button size="lg" className="rounded-full text-lg px-10 py-7">
+              <Button size="lg" className="rounded-full text-lg px-10 py-7" onClick={() => {
+                document.getElementById('chat-input')?.focus();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}>
                 <Icon name="Sparkles" size={24} className="mr-2" />
                 Создать проект бесплатно
               </Button>
